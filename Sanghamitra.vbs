@@ -953,7 +953,10 @@ Public Function fnRAD_SetDataValue(paramStr)
 		ElseIf PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1").Exist(0) Then
 			Set rootObj = PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1")
 			sFlag = True
-		Else
+		
+		ElseIf PbWindow("PWin_MainWindow").PbWindow("w_upd_trip").Exist(0) Then
+			Set rootObj=PbWindow("PWin_MainWindow").PbWindow("w_upd_trip")
+		EsleIf
 			resultStr = "Fail"
 			remarksStr = "[ERR] Unable to find the required window"
 		End If
@@ -1102,10 +1105,21 @@ Public Function fnRAD_TypeDataValues(paramStr)
 			Set rootObj = PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1")
 			sFlag = True
 		Else
-			resultStr = "Fail"
+		resultStr = "Fail"
 			remarksStr = "[ERR] Unable to find the required window"
 		End If
+		If PbWindow("PWin_MainWindow").PbWindow("wr_define_params_dem").Exist(0) Then
+			Set rootObj = PbWindow("PWin_MainWindow").PbWindow("wr_define_params_dem")
+			rootObj.highlight
+			sFlag = True  
+		else
+		resultStr = "Fail"
+			remarksStr = "[ERR] Unable to find the required window"
+		End If
+		
+		
 	End If
+	
 	
 	If PbWindow("PWin_MainWindow").Exist(0) Then
 		If strObjValue <> "" Then
@@ -1149,6 +1163,11 @@ Select Case format
 		sFormat=FormatDateTime(dDate, 1)
 		spldate=split(sFormat, " ")
 		newFormat=spldate(0)&ucase(left(spldate(1),3))&spldate(2)
+		'Sanghamitra
+		spldate=split(dDate,"-")
+       mon=left(monthname(month(dDate)),3)
+      newformat=spldate(0)&mon&"20"&spldate(2)
+	  
 	Case "DDMMMYY"
 		sFormat=FormatDateTime(dDate, 1)
 		spldate=split(sFormat, " ")
@@ -1167,8 +1186,14 @@ Public Function fnRAD_VerifyDialog(str)
 	CURRENT_FUNCTION = "fnRAD_VerifyDialog"
 	On Error Resume Next
 	Call fnCOM_updateLogFile ("I", CURRENT_FUNCTION, paramStr)
-	
+	wait(5)
 	fnRAD_VerifyDialog=False
+	'sanghamitra
+	'	If Dialog("PDia_Alert").WinButton("WinBtn_OK").Exist(1) Then
+	'	 Dialog("PDia_Alert").WinButton("WinBtn_OK").Click
+		If Dialog("PDia_Alert").WinButton("WinBtn_Yes").Exist(1) Then
+			Dialog("PDia_Alert").WinButton("WinBtn_Yes").Click
+ 		End If
 	If Dialog("PDia_Alert").Static("WinTxt_Alert").Exist(5) Then
 		sText=trim(Dialog("PDia_Alert").Static("WinTxt_Alert").GetROProperty("text"))
 		If instr(sText, str)<>0 Then
@@ -1290,21 +1315,45 @@ Public Function fnRAD_RightClickNavigateTo(strmenu)
 				
 		Case "DEMURRAGE"
 			PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1").PbTreeView("PTV_Explorer").Click xright, xbtm, micRightBtn
-				If InStr(1, "Claim Details...", trim(menuItem(0)), 1) Then
-					levelNo1 = 4
-				End If
+'			Commented by sanghamitra
+'				If InStr(1, "Claim Details...", trim(menuItem(0)), 1) Then
+'					levelNo1 = 4
+'				End If
+
+			Set WshShell = CreateObject("WScript.Shell")
+			WshShell.SendKeys "{c}"
+			wait(3)
+			
+			WshShell.SendKeys "{ENTER}"
+			
+			Call fnCOM_SetTestResult("Pass")
+			Call fnCOM_SetTestRemarks("Navigated To: " & strMenu)
+			Exit function
 
 		Case "DemurrageExplorerPayment"
 			PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1").PbDataWindow("PDw_PaymentList").Click 175,56, micRightBtn
-				If InStr(1, "Add Payment...", trim(menuItem(0)), 1) Then
-					levelNo1 = 2
-				End If
+				Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "{DOWN}"
+				wait 2
+				WshShell.SendKeys "{DOWN}"
+				wait(2)
+				WshShell.SendKeys "{ENTER}"
+				Set WshShell=nothing
 		
 		Case "DemurrageExplorerInvoice"
 			PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1").PbDataWindow("PDw_invoice_master").Click 235,90, micRightBtn
-				If InStr(1, "Add Invoice Received...", trim(menuItem(0)), 1) Then
-					levelNo1 = 2
-				End If
+'				If InStr(1, "Add Invoice Received...", trim(menuItem(0)), 1) Then
+'					levelNo1 = 2
+'				End If
+				Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "{DOWN}"
+				wait 2
+				WshShell.SendKeys "{DOWN}"
+				wait(2)
+				WshShell.SendKeys "{ENTER}"
+				Set WshShell=nothing
 	End Select
 	
 	If levelNo4 <> 0 Then
@@ -1320,7 +1369,7 @@ Public Function fnRAD_RightClickNavigateTo(strmenu)
 	If Window("Win_RADAR").Exist(0) Then
 		wait(2)
 		Window("Win_RADAR").WinMenu("Win_RightClickMenu").Select itemPath
-		wait(8)
+		wait(15)
 	
 	If instr(strmenu, "PORTLEG")>0 or instr(strmenu, "TRIPPORT")>0 or instr(strmenu, "TRIPVESSEL")>0 or instr(strmenu, "DEMURRAGE")>0 Then
 		strMenu = strObject(0)&","&strObject(1)
@@ -1521,14 +1570,23 @@ Public Function fnRAD_Treeview(strparam)
 
 	Select Case sOpern
 		Case "SELCT"
+		newSFoldname=left(sFold,1)
+		PbWindow("PWin_MainWindow").PbWindow("w_explorer_dem").PbTreeView("tv_explorer").highlight
+		
+			Set WshShell = CreateObject("WScript.Shell")
+			WshShell.SendKeys ("newSFoldname")
 			ObjWin.Select sFold
-				If trim(ObjWin.GetSelection)=sFold Then
+			selectedtext=ObjWin.GetSelection
+
+				If instr(sFold,selectedtext)>0 Then
 					fnRAD_Treeview=True
 					resultStr = "Pass"
 					remarksStr = "Treeview selected: "&sFold
+					Exit function
 				Else
 					resultStr = "Fail"
-					remarksStr = "[ERR] Treeview Not selected: "&sFold					
+					remarksStr = "[ERR] Treeview Not selected: "&sFold	
+					Exit function					
 				End If
 		Case "EXPAND"
 			ObjWin.Expand sFold
@@ -1549,3 +1607,150 @@ Public Function fnRAD_Treeview(strparam)
 
 End Function
 '#####################################################################################################################
+
+Public Function fnRAD_TypeDataValues1(paramStr,cellvalue)
+	
+	CURRENT_FUNCTION = "fnRAD_TypeDataValues"
+	On Error Resume Next
+	Call fnCOM_updateLogFile ("S", CURRENT_FUNCTION, paramStr)
+	
+	sFlag = False
+	indvParam = Split(paramStr, ",")
+	If UBound(indvParam) < 2 Then
+		Call fnCOM_updateLogFile ("E", CURRENT_FUNCTION, paramStr)
+	End If
+	windowName = Trim(indvParam(0))
+	objectName = Trim(indvParam(1))
+	strObjValue = Trim(indvParam(2))
+	tabvalue=Trim(indvParam(3))
+	cellData=cellvalue
+	If PbWindow("PWin_MainWindow").Exist(0) Then
+		If PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin2").Exist(0) Then
+			Set rootObj = PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin2")
+			sFlag = True
+		
+		ElseIf PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1").Exist(0) Then
+			Set rootObj = PbWindow("PWin_MainWindow").PbWindow("PWin_SubWin1")
+			sFlag = True
+		Else
+			resultStr = "Fail"
+			remarksStr = "[ERR] Unable to find the required window"
+		End If
+	End If
+	If PbWindow("PWin_MainWindow").Exist(0) Then
+		If strObjValue <> "" Then
+			If rootObj.Exist(0) Then
+					
+				If tabvalue=1 Then
+				rootObj.PbDataWindow(windowName).SelectCell cellData, objectName
+				Set WshShell = CreateObject("WScript.Shell")
+				WshShell.SendKeys "{TAB}"	
+				wait(2)
+				WshShell.SendKeys strObjValue
+				wait(1)
+				End If
+				If tabvalue=2 Then
+					rootObj.PbDataWindow(windowName).SelectCell cellData, objectName
+				Set WshShell = CreateObject("WScript.Shell")
+				WshShell.SendKeys "{TAB}"
+				wait(2)
+				WshShell.SendKeys "{TAB}"
+				wait(2)
+				WshShell.SendKeys strObjValue
+'				rootObj.PbDataWindow(windowName).Type strObjValue	
+				wait(1) 
+				End If
+				
+				Call fnCOM_SetTestResult("Pass")
+				Call fnCOM_SetTestRemarks(objectName & " set to " & strObjValue)
+			Else
+				Call fnCOM_SetTestResult("Fail")
+				Call fnCOM_SetTestRemarks("[ERR] Object not found: " & objectName)
+			End IF
+		Else
+			Call fnCOM_SetTestResult("Fail")
+			Call fnCOM_SetTestRemarks("[ERR] Session not available: " & objectName)
+		End If	
+	Else
+		Call fnCOM_SetTestResult("Fail")
+		Call fnCOM_SetTestRemarks("[ERR] Session not available: " & objectName)
+	End If
+	
+	Call fnCOM_reportErr(CURRENT_FUNCTION)
+	
+	
+	
+	
+	
+	
+	
+	
+End Function
+
+
+
+
+
+
+Public Function ShellScript()
+	Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "%{ENTER}"
+					wait 3
+				Set WshShell = Nothing
+End Function
+
+
+Public function fnRAD_NavigateTo1(strMenu)
+
+Window("Win_RADAR").Activate
+
+Select Case strMenu
+Case "Save"
+			Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "%{s}"
+					wait 3
+				Set WshShell = Nothing
+wait(30)
+
+Case "Find"
+			Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "%{f}"
+					wait 3
+				Set WshShell = Nothing
+wait(30)
+
+Case "Insert"
+			Set WshShell =createobject("WScript.Shell")
+				wait 2
+				WshShell.SendKeys "%{i}"
+					wait 3
+				Set WshShell = Nothing
+
+
+end select
+On Error Resume Next
+'	If Window("Win_RADAR").Exist(10) Then
+'		On Error Resume Next
+'		Window("Win_RADAR").WinMenu("Win_Menu").Select strMenu
+		'wait(2)
+		If Err.Number <> 0 Then
+			Call fnCOM_SetTestResult("Fail")
+			Call fnCOM_SetTestRemarks("[ERR] Unable to navigate to: " & strMenu)
+		Else
+			Call fnCOM_SetTestResult("Pass")
+			Call fnCOM_SetTestRemarks("Navigated To: " & strMenu)
+		End If
+'	Else 
+'		Call fnCOM_SetTestResult("Fail")
+'		Call fnCOM_SetTestRemarks("[ERR] Unable to navigate to: " & strMenu)
+'	End If
+	
+	Call fnCOM_reportErr(CURRENT_FUNCTION)
+	
+
+End  Function
+
+
